@@ -2,7 +2,7 @@ import re
 import string
 import string
 from pathlib import Path
-
+import math
 import pickle
 
 import numpy as np
@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+from sklearn.impute import KNNImputer
+"""
 from sklearn.model_selection import cross_validate as cross_validation, ShuffleSplit, cross_val_score, train_test_split, KFold
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import classification_report, accuracy_score, auc
@@ -18,7 +20,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.cluster import KMeans
-
+"""
 
 
 
@@ -144,9 +146,11 @@ enc_data = pd.get_dummies(data_model, prefix=['Nat','Type'], columns=['Country',
 
 # pickle the data to be used 
 enc_data.to_pickle('preprocessed_data.pkl')
+#print(enc_data)
+
 
 # Visualizations
-hfias_status_vis(data_model)
+#hfias_status_vis(data_model)
 
 # Imputation ---------------------------------------------------------------------------------
 
@@ -170,12 +174,42 @@ def missing_data_vis():
 	plt.show(block=True)
 
 
-
-
-
-missing_data_vis()
-
+#missing_data_vis()
 
 
 
 
+# K means imputation
+
+def knn_imputer(df, column_name):
+	imputer = KNNImputer()
+	df[column_name] = imputer.fit_transform(df[column_name].to_numpy().reshape(-1,1))
+	return df
+
+# Takes a while to run, there are 94 features
+def knn_imputer_all_columns(df):
+	for col in df.columns:
+		print(df[col].dtype)
+		if df[col].dtype != object:
+			imputer = KNNImputer()
+			df[col] = imputer.fit_transform(df[col].to_numpy().reshape(-1,1))
+	return df
+
+
+# Example for running knn_imputer
+col_name = 'GPS_ALT'
+df = knn_imputer(enc_data, col_name)
+print(df['GPS_ALT'])
+
+
+
+#df = knn_imputer_all_columns(enc_data)
+
+"""
+# Check if there is any NaN in column
+for col in df.columns:
+	for item in df[col]:
+		if math.isnan(item) == True:
+			print(item)
+
+"""
