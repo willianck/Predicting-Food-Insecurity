@@ -4,7 +4,9 @@ import seaborn as sns
 import pandas as pd
 
 from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import chi2
+#from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import f_regression
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.feature_selection import RFE
@@ -17,33 +19,59 @@ from sklearn.svm import SVR
 
 
 
-data  = pd.read_pickle('./preprocessed_data.pkl')
-X = data.iloc[:,0:20]  #independent columns
-y = data.iloc[:,-1]    #target column i.e price range#apply SelectKBest class to extract top 10 best features
+#Obtaining data
 
-#fit_transform() is usefule for obtaining the dataset with the selected features, fit() is better for determining which features were chosen
+data  = pd.read_pickle('./imputed_data.pkl')
+#data.to_csv("imputed_data.csv")
+
+X = data.drop(['Food_InsecurityLevel'],axis=1)
+y = data["Food_InsecurityLevel"]
 
 
-def univariate_selection(X,y,k):
-	bestfeatures = SelectKBest(score_func=chi2, k=k).fit_transform(X,y)
-	#bestfeatures = SelectKBest(score_func=chi2, k=10)
-	fit = bestfeatures.fit(X,y)
+
+
+
+#Feature selection helper functions
+
+#Returns a dataframe including the feature names and the scores from the feature selection method output
+def get_top_features_and_scores(fit, X):
 	dfscores = pd.DataFrame(fit.scores_)
 	dfcolumns = pd.DataFrame(X.columns)
-	#concat two dataframes for better visualization 
-	featureScores = pd.concat([dfcolumns,dfscores],axis=1)
-	featureScores.columns = ['Specs','Score']  #naming the dataframe columns
-	print(featureScores.nlargest(10,'Score'))  #print 10 best features
+	featureScores = pd.concat([dfcolumns,dfscores],axis=1) #concat two dataframes for better visualization 
+	featureScores.columns = ['Feature','Score']  #naming the dataframe columns
+	return featureScores.nlargest(10,'Score')  #print 10 best features
 
+
+def indeces_to_column(df, cols):
+	top_features_names = df.iloc[:,cols].columns
+	return list(top_features_names)
+
+
+
+
+
+
+# Feature selection methods
+
+def univariate_selection(X,y,k, score_func):
+	bestfeatures = SelectKBest(score_func=score_func, k=k)
+	#bestfeatures = SelectKBest(score_func=f_classif, k=k)
+	fit = bestfeatures.fit(X,y)
+
+	scores = get_top_features_and_scores(fit, X)
+	print(scores)
+
+	cols = bestfeatures.get_support(indices=True)
+	return cols
 
 def trees(X,y):
 	clf = ExtraTreesClassifier()
 	clf = clf.fit(X, y)
-	clf.feature_importances_
-	X_new = model.transform(X)
+	return clf.feature_importances_
+	#X_new = model.transform(X)
 
 
-def feature_importance(X,y,k):
+def trees_vis(X,y,k):
 	model = ExtraTreesClassifier()
 	model = model.fit(X,y)
 	print(model.feature_importances_) #use inbuilt class feature_importances of tree based classifiers
@@ -57,28 +85,33 @@ def feature_importance(X,y,k):
 	plt.show()
 
 
+# Need to pick a subset of features as a 95x95 matrix is too much
 def correlation_matrix(data):
 	corrmat = data.corr()
 	top_corr_features = corrmat.index
 	plt.figure(figsize=(20,20))
 	#plot heat map
-	g=sns.heatmap(data[top_corr_features].corr(),annot=True,cmap="RdYlGn")
+	sns.heatmap(data[top_corr_features].corr(),annot=True,cmap="RdYlGn")
+	plt.show()
 
 
 
 def forward_sfs(X,y):
 	#Need an estimator so that it can determine which feature to drop (here it's KNN)
-	#knn = KNeighborsClassifier(n_neighbors=3)
+	knn = KNeighborsClassifier(n_neighbors=3)
 	sfs = SequentialFeatureSelector(knn, n_features_to_select=3)
-	X_transformed = sfs.fit_transform(X,y)
-
+	fit = sfs.fit(X,y)
+	print(fit.support_)
+	#X_transformed = sfs.fit_transform(X,y)
 
 
 def backward_sfs(X,y):
 	#Need an estimator so that it can determine which feature to drop (here it's KNN)
-	#knn = KNeighborsClassifier(n_neighbors=3)
+	knn = KNeighborsClassifier(n_neighbors=3)
 	sfs = SequentialFeatureSelector(knn, n_features_to_select=3, direction='backward')
-	X_transformed = sfs.fit_transform(X,y)
+	fit = sfs.fit(X,y)
+	print(fit.support_)
+	#X_transformed = sfs.fit_transform(X,y)
 
 
 def rfe(X,y):
@@ -88,7 +121,6 @@ def rfe(X,y):
 	print(selector.support_)
 	print(selector.ranking_)
 	data_reduced = selector.transform(X)
-
 
 
 def rfecv(X,y):
@@ -102,9 +134,19 @@ def rfecv(X,y):
 
 
 def lasso(X, y):
-	clf = linear_model.Lasso(alpha=0.1)
-	clf.fit(X,y)
-	print(clf.coef_)
-	print(clf.intercept_)
+	clf = Lasso(alpha=0.1)
+	fit = clf.fit(X,y)
+	#print(clf.coef_)
+	#print(clf.intercept_)
 
 
+# Running feature selection
+
+
+"""
+features_usfc = univariate_selection(X, y, 10, f_classif)
+print(indeces_to_column(data, features_usfc))
+
+features_usfr = univariate_selection(X,y,10, f_regression)
+print(indeces_to_column(data, features_usfr))
+"""
