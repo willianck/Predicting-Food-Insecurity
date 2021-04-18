@@ -14,9 +14,8 @@ from sklearn import tree
 from sklearn.neural_network import MLPClassifier
 
 
-
 from sklearn.model_selection import train_test_split
-
+from sklearn.preprocessing import MinMaxScaler
 
 
 #Obtaining data
@@ -24,7 +23,7 @@ from sklearn.model_selection import train_test_split
 data  = pd.read_pickle('./imputed_data.pkl')
 #data.to_csv("imputed_data.csv")
 
-y = data["Food_InsecurityLevel"].astype('int32')
+y = data["Food_InsecurityLevel"]
 
 all_columns = list(data.columns)
 
@@ -39,14 +38,19 @@ for col in columns_of_interest:
 X_reduced = data.iloc[:, col_indeces]
 #print(data_reduced)
 
-
-# Need to normalize the data
-
-
 #print(data_reduced_array)
 
 
+print(X_reduced["LandOwned"].min())
+
+
 # Support functions
+
+def scale_data(X):
+	scaler = MinMaxScaler()
+	for col in X.columns:
+		X[col] = scaler.fit_transform(X[col].to_numpy().reshape(-1,1))[:,0]	
+	return X
 
 def split_data(X,y):
 	X_array = X.to_numpy()
@@ -57,7 +61,7 @@ def split_data(X,y):
 
 
 
-
+X_reduced = scale_data(X_reduced)
 X_train, X_test, y_train, y_test = split_data(X_reduced, y)
 
 
