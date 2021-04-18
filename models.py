@@ -3,14 +3,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV, LassoCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegressionCV
 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVR 
+from sklearn.svm import SVC, NuSVC, LinearSVC 
+
+from sklearn import tree
+
+from sklearn.neural_network import MLPClassifier
 
 
 
-
+from sklearn.model_selection import train_test_split
 
 
 
@@ -19,8 +24,7 @@ from sklearn.svm import SVR
 data  = pd.read_pickle('./imputed_data.pkl')
 #data.to_csv("imputed_data.csv")
 
-y = data["Food_InsecurityLevel"]
-
+y = data["Food_InsecurityLevel"].astype('int32')
 
 all_columns = list(data.columns)
 
@@ -35,54 +39,135 @@ for col in columns_of_interest:
 X_reduced = data.iloc[:, col_indeces]
 #print(data_reduced)
 
-X_reduced_array = X_reduced.to_numpy()
+
+# Need to normalize the data
+
+
 #print(data_reduced_array)
 
 
+# Support functions
+
+def split_data(X,y):
+	X_array = X.to_numpy()
+	y_array = y.to_numpy()
+	X_train, X_test, y_train, y_test = train_test_split(X_array, y_array, test_size=0.3) 
+	return X_train, X_test, y_train, y_test
 
 
 
+
+
+X_train, X_test, y_train, y_test = split_data(X_reduced, y)
+
+
+
+#Metrics
 
 # Models
+# Logistic regression
+def ridge(X_train, X_test, y_train, y_test):
+	reg = LogisticRegression(penalty='l1', solver='saga') 
+	reg.fit(X_train, y_train)
+	accuracy = reg.score(X_test, y_test)
+	print(accuracy)
 
-#Linear regression (OLS)
-def ols(X, y):
-	reg = LinearRegression()
-	reg.fit(X, y)
-	print(reg.coef_)
-	print(reg.intercept_)
+def ridgecv(X_train, X_test, y_train, y_test):
+	reg = LogisticRegressionCV(cv=5, random_state=0, penalty='l1', solver='saga')
+	reg.fit(X_train, y_train)
+	accuracy = reg.score(X_test, y_test)
+	print(accuracy)
 
+def lasso(X_train, X_test, y_train, y_test):
+	reg = LogisticRegression(penalty='l2')
+	reg.fit(X_train, y_train)
+	accuracy = reg.score(X_test, y_test)
+	print(accuracy)
 
-def ridge(X, y):
-	reg = Ridge(alpha=.5)
-	reg.fit(X, y)
-	print(reg.coef_)
-	print(reg.intercept_)
-
-def ridgecv(X, y):
-	reg = RidgeCV(alphas=np.logspace(-6, 6, 13))
-	reg.fit(X, y)
-	print(reg.coef_)
-	print(reg.intercept_)
-
-def lasso(X, y):
-	reg = Lasso(alpha=0.1)
-	reg.fit(X, y)
-	print(reg.coef_)
-	print(reg.intercept_)
+def lassocv(X_train, X_test, y_train, y_test):
+	reg = LogisticRegressionCV(cv=5)
+	reg.fit(X_train, y_train)
+	accuracy = reg.score(X_test, y_test)
+	print(accuracy)
 
 
-def lassocv(X, y):
-	reg = LassoCV(cv=5, random_state=0)
-	reg.fit(X, y)
-	print(reg.coef_)
-	print(reg.intercept_)
 
+# SVMs
+def svc(X_train, X_test, y_train, y_test):
+	clf = SVC()
+	clf.fit(X_train, y_train)
+	accuracy = clf.score(X_test, y_test)
+	print(accuracy)
+
+
+
+def linear_svc(X_train, X_test, y_train, y_test):
+	clf = LinearSVC()
+	clf.fit(X_train, y_train)
+	accuracy = clf.score(X_test, y_test)
+	print(accuracy)
+
+
+
+
+def nu_svc(X_train, X_test, y_train, y_test):
+	clf = NuSVC()
+	clf.fit(X_train, y_train)
+	accuracy = clf.score(X_test, y_test)
+	print(accuracy)
+
+
+
+
+
+
+
+# KNN
+def knn(X_train, X_test, y_train, y_test):
+	clf = KNeighborsClassifier(n_neighbors=9)
+	clf.fit(X_train, y_train)
+	accuracy = clf.score(X_test, y_test)
+	print(accuracy)
+
+
+
+
+# Trees
+# Decision Tree 
+def dct(X_train, X_test, y_train, y_test):
+	clf = tree.DecisionTreeClassifier()
+	clf.fit(X_train, y_train)
+	clf.predict(X_test, y_test)
+	#tree.plot_tree(clf) 
+
+
+# Random Forest
+
+
+
+
+# Neural Network
+def nn(X_train, X_test, y_train, y_test):
+	clf = MLPClassifier(hidden_layer_sizes=(100,), random_state=1)
+	clf.fit(X_train, y_train)
+	accuracy =  clf.score(X_test, y_test)
+	print(accuracy)
+
+# Model calling
 
 """
-ols(X_reduced, y)
-ridge(X_reduced, y)
-ridgecv(X_reduced, y)
-lasso(X_reduced, y)
-lassocv(X_reduced, y)
+ridge(X_train, X_test, y_train, y_test)
+ridgecv(X_train, X_test, y_train, y_test)
+lasso(X_train, X_test, y_train, y_test)
+lassocv(X_train, X_test, y_train, y_test)
+
+knn(X_train, X_test, y_train, y_test)
+
+svc(X_train, X_test, y_train, y_test)
+linear_svc(X_train, X_test, y_train, y_test)
+nu_svc(X_train, X_test, y_train, y_test)
+
+dct(X_train, X_test, y_train, y_test)
+
+nn(X_train, X_test, y_train, y_test)
 """
