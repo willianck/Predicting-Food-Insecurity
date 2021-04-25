@@ -9,8 +9,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
 
-
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LogisticRegressionCV
 
@@ -242,10 +240,29 @@ pipelines.append(('nn' , (Pipeline([('scaled' , MinMaxScaler()), ('nn', MLPClass
 
 
 
+ridge_params = {}
 
-for pipe_name, model in pipelines:
+lasso_params = {}
+
+knn_params = {}
+
+svc_params = {}
+
+lsvc_params = {}
+
+nusvc_params = {}
+
+dct_params = {}
+
+nn_params = {}
+
+
+
+parameters = [ridge_params, lasso_params, knn_params, svc_params, lsvc_params, nusvc_params, dct_params, nn_params]
+
+for (pipe_name, model), p in zip(pipelines, parameters):
+	#clf = GridSearchCV(model, p)
 	model.fit(X_train ,y_train)
 	accuracy = model.score(X_test, y_test)
 	print(pipe_name, accuracy)
-#print(accuracy_score(Y_val, pipe1.predict(X_val)))
 
