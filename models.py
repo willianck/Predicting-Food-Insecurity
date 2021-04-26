@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, NuSVC, LinearSVC 
 
-from sklearn import tree
+from sklearn.ensemble import ExtraTreesClassifier
 
 from sklearn.neural_network import MLPClassifier
 
@@ -55,7 +55,6 @@ def split_data(X,y):
 
 
 
-X_reduced = scale_data(X_reduced)
 X_train, X_test, y_train, y_test = split_data(X_reduced, y)
 
 
@@ -70,14 +69,15 @@ pipelines.append(('lasso' , (Pipeline([('scaled' , MinMaxScaler()), ('lasso', Lo
 
 pipelines.append(('knn' , (Pipeline([('scaled' , MinMaxScaler()), ('knn', KNeighborsClassifier(n_neighbors=4))]))))
 
+"""
 pipelines.append(('svc' , (Pipeline([('scaled' , MinMaxScaler()), ('svc', SVC())]))))
 pipelines.append(('linear_svc' , (Pipeline([('scaled' , MinMaxScaler()), ('linear_svc', LinearSVC())]))))
 pipelines.append(('nu_svc' , (Pipeline([('scaled' , MinMaxScaler()), ('nu_svc', NuSVC())]))))
 
-#pipelines.append(('dct' , (Pipeline([('scaled' , MinMaxScaler()), ('dct', tree.DecisionTreeClassifier())]))))
+#pipelines.append(('etc' , (Pipeline([('scaled' , MinMaxScaler()), ('etc',ExtraTreesClassifier)]))))
 
 pipelines.append(('nn' , (Pipeline([('scaled' , MinMaxScaler()), ('nn', MLPClassifier(hidden_layer_sizes=(100,)))]))))
-
+"""
 
 
 
@@ -96,13 +96,14 @@ lsvc_params = {'C': np.linspace(1,100,10), 'loss' : ['hinge', 'squared_hinge']}
 
 nusvc_params = {'nu' : np.linspace(0,0.99, 10)}
 
-dct_params = {'criterion' : ['gini', 'entropy'], 'splitter' : ['best', 'random']}
+etc_params = {'n_estimators' : np.linspace(5,200,20), criterion : ['gini', 'entropy']}
 
 
 nn_params = {'activation' : ['identity', 'logistic’, ‘tanh’, ‘relu'], 'solver' : ['lbfgs', 'sgd', 'adam'], 'alpha' : np.linspace(1e-6,1e-2,10)}
 
 
-parameters = [ridge_params, lasso_params, knn_params, svc_params, lsvc_params, nusvc_params, dct_params, nn_params]
+parameters = [ridge_params, lasso_params, knn_params]
+#parameters = [ridge_params, lasso_params, knn_params, svc_params, lsvc_params, nusvc_params, etc_params, nn_params]
 
 
 
@@ -110,7 +111,8 @@ parameters = [ridge_params, lasso_params, knn_params, svc_params, lsvc_params, n
 
 for (pipe_name, model), p in zip(pipelines, parameters):
 	model_cv = GridSearchCV(model[1], p)
-	model_cv.fit(X_train ,y_train)
+	model_cv.fit(X_train, y_train)
+	print(model_cv.best_estimator_)
 	accuracy = model_cv.score(X_test, y_test)
 	print(pipe_name, accuracy)
 
@@ -126,14 +128,14 @@ for (pipe_name, model), p in zip(pipelines, parameters):
 
 #NN
 
-def nn_vis(time_valid, x_valid, results, history, epochs, cases_scaler):
+def nn_vis(x_valid, results, history, epochs, cases_scaler):
 
-	time = np.arange(len(dataset_full), dtype="float32") #Time is represented as day x since first covid case
+	time = np.arange(len(dataset), dtype="float32") #Time is represented as day x since first covid case
 
 	#Plot x_valid and predicted results on same graph to see how similar they are
 	plt.figure(figsize=(10, 6))
-	plt.plot(time_valid, x_valid_unscaled, 'r-')
-	plt.plot(time_valid, results_unscaled, 'b-')
+	plt.plot(time, x_valid_unscaled, 'r-')
+	plt.plot(time, results_unscaled, 'b-')
 	plt.title("Validation and Results for confirmed cases")
 	plt.xlabel("Time")
 	plt.ylabel("Confirmed Cases")

@@ -11,6 +11,9 @@ import seaborn as sns
 import pandas as pd
 
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import OneHotEncoder
+
+
 """
 from sklearn.model_selection import cross_validate as cross_validation, ShuffleSplit, cross_val_score, train_test_split, KFold
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -24,7 +27,7 @@ from sklearn.cluster import KMeans
 
 
 
-data = pd.read_csv('../RHoMIS_ADS_Project_2021/Data/RHoMIS_Indicators.csv',encoding='latin1')
+
 #data  = pd.read_pickle('./preprocessed_data.pkl')
 
 # Data inspection ---------------------------------------------------------------------------
@@ -114,8 +117,14 @@ def translate_words(data_model):
 	data_model['WorstFoodSecMonth'] = data_model.WorstFoodSecMonth.apply(translate)
 	return data_model
 
+def encode_categoricals(data_model):
+	enc = OneHotEncoder(handle_unknown='ignore')
+	enc_data = enc.fit_transform(data_model)
+	return enc_data
+		
 
-
+	
+#enc_data = pd.get_dummies(data_model, prefix=['Nat','Type'], columns=['Country','HouseholdType'])
 
 def hfias_status_vis(data_model):
 	HFIAS_status_count = data_model['HFIAS_status'].value_counts()
@@ -134,21 +143,24 @@ data_model['HFIAS_status'] = data_model.HFIAS_status.apply(process_status)
 
 data_model['HFIAS_status'].value_counts()
 """
-
 #print(data_model['Country'].value_counts())
 
-data_model = drop_columns(data)
-data_model = replace_missing_with_nan(data_model)
-data_model = translate_words(data_model)
 
-# using one got encoding to encode categorical  data , country and  household type 
-enc_data = pd.get_dummies(data_model, prefix=['Nat','Type'], columns=['Country','HouseholdType'])
 
-# pickle the data to be used 
-enc_data.to_pickle('preprocessed_data.pkl')
+def preprocess_data():
+	data = pd.read_csv('../RHoMIS_ADS_Project_2021/Data/RHoMIS_Indicators.csv',encoding='latin1')
+	data_model = drop_columns(data)
+	data_model = replace_missing_with_nan(data_model)
+	data_model = translate_words(data_model)
+	enc_data = encode_categoricals(data_model)
+	#enc_data.to_pickle('preprocessed_data.pkl')
+	print(enc_data)
+
+#preprocess_data()
+
+data  = pd.read_pickle('./preprocessed_data.pkl')
+
 #print(enc_data)
-
-
 # Visualizations
 #hfias_status_vis(data_model)
 
@@ -197,10 +209,11 @@ def knn_imputer_all_columns(df):
 
 
 # Example for running knn_imputer
+"""
 col_name = 'GPS_ALT'
 df = knn_imputer(enc_data, col_name)
 print(df['GPS_ALT'])
-
+"""
 
 
 #df = knn_imputer_all_columns(enc_data)
